@@ -92,6 +92,7 @@ if (isset($_POST['acao'])) {
 <html>
 <head>
     <title>Blackjack</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <h1>Blackjack</h1>
