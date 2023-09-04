@@ -1,98 +1,79 @@
 <?php
-session_start();
+    session_start();
+    class Blackjack{
+        private $deck;
+        private $player_hand;
+        private $dealer_hand;
 
-// Função para calcular o valor de uma mão de blackjack
-function calcularValorMao($mao) {
-    $valor = 0;
-    $numAses = 0;
-    
-    foreach ($mao as $carta) {
-        if ($carta['valor'] === 'A') {
-            $numAses++;
-        } elseif (is_numeric($carta['valor'])) {
-            $valor += $carta['valor'];
-        } else {
-            $valor += 10; // Cartas de figura valem 10 pontos
+        public function __construct()
+        {
+            $this->$deck = $this->generateDeck();
+            $this->player_hand = [];
+            $this->dealer_hand = [];
+        }
+
+        public function generateDeck(){
+            $deck = [];
+            $suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+            $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+            foreach ($suits as $suit) {
+                foreach ($values as $value) {
+                    $deck[] = ['value' => $value, 'suit' => $suit];
+                }
+            }
+
+            shuffle($deck);
+            return $deck;
+        }
+
+        public function startGame(){
+            if(!isset($_SESSION['player_hand']) || isset($_POST['new_game'])){
+                $_SESSION['player_hand'] = [];
+                $_SESSION['dealer_hand'] = [];
+
+                for ($i=0; $i < 2; $i++) { 
+                    $_SESSION['dealer_hand'][] = array_pop($this->deck);
+                    $_SESSION['player_hand'][] = array_pop($this->deck);
+                }
+            }
+        }
+
+        public function play($action){
+            if($action === 'hit'){
+                $_SESSION['player_hand'][] = array_pop($this->deck);
+                if($this->calcHandValue($_SESSION['player_hand']) > 21){
+                    return "Você estourou! Crupiê Vence.";
+                }
+                elseif($action === 'stand'){
+                    while($this->calcHandValue($_SESSION['dealer_hand']) < 17){
+                        $_SESSION['dealer_hand'][] = array_pop($this->deck);
+                    }
+
+                    $player_hand_value = $this->calcHandValue($_SESSION['player_hand']);
+                    $dealer_hand_value = $this->calcHandValue($_SESSION['dealer_hand']);
+
+
+                    if($dealer_hand_value > 21 || $player_hand_value > $dealer_hand_value){
+                        return "Você venceu!!";
+                    }
+                    elseif ($player_hand_value < $dealer_hand_value) {
+                        return "Crupiê vence.";
+                    } 
+                    else {
+                        return "Empate.";
+                    }
+                }
+            }
         }
     }
-    
-    // Trata os Ases para obter o melhor valor possível
-    for ($i = 0; $i < $numAses; $i++) {
-        if ($valor + 11 <= 21) {
-            $valor += 11;
-        } else {
-            $valor += 1;
-        }
-    }
-    
-    return $valor;
-}
-
-// Cria um baralho de cartas
-$baralho = [];
-$naipes = ['Espadas', 'Copas', 'Ouros', 'Paus'];
-$valores = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-
-foreach ($naipes as $naipe) {
-    foreach ($valores as $valor) {
-        $baralho[] = ['valor' => $valor, 'naipe' => $naipe];
-    }
-}
-
-shuffle($baralho);
-
-// Inicia uma nova mão
-if (!isset($_SESSION['mao_jogador']) || isset($_POST['novo_jogo'])) {
-    $_SESSION['mao_jogador'] = [];
-    $_SESSION['mao_crupie'] = [];
-    
-    // Distribui duas cartas para o jogador e uma para o crupiê
-    for ($i = 0; $i < 2; $i++) {
-        $_SESSION['mao_jogador'][] = array_pop($baralho);
-        $_SESSION['mao_crupie'][] = array_pop($baralho);
-    }
-}
-
-// Lógica do jogo
-if (isset($_POST['acao'])) {
-    if ($_POST['acao'] === 'hit') {
-        $_SESSION['mao_jogador'][] = array_pop($baralho);
-        
-        // Verifica se o jogador estourou (passou de 21)
-        if (calcularValorMao($_SESSION['mao_jogador']) > 21) {
-            echo "Você estourou! Crupiê vence.";
-            unset($_SESSION['mao_jogador']);
-            unset($_SESSION['mao_crupie']);
-        }
-    } elseif ($_POST['acao'] === 'stand') {
-        // Crupiê joga automaticamente até ter pelo menos 17 pontos
-        while (calcularValorMao($_SESSION['mao_crupie']) < 17) {
-            $_SESSION['mao_crupie'][] = array_pop($baralho);
-        }
-        
-        $valorMaoJogador = calcularValorMao($_SESSION['mao_jogador']);
-        $valorMaoCrupie = calcularValorMao($_SESSION['mao_crupie']);
-        
-        // Verifica quem venceu
-        if ($valorMaoCrupie > 21 || $valorMaoJogador > $valorMaoCrupie) {
-            echo "Você venceu!";
-        } elseif ($valorMaoJogador < $valorMaoCrupie) {
-            echo "Crupiê vence.";
-        } else {
-            echo "Empate.";
-        }
-        
-        unset($_SESSION['mao_jogador']);
-        unset($_SESSION['mao_crupie']);
-    }
-}
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Blackjack</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <title>QUEBRANDO A BANCA</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Blackjack</h1>
