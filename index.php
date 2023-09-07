@@ -1,99 +1,150 @@
 <?php
-    session_start();
-    class Blackjack{
-        private $deck;
-        private $player_hand;
-        private $dealer_hand;
+session_start();
 
-        public function __construct()
-        {
-            $this->$deck = $this->generateDeck();
-            $this->player_hand = [];
-            $this->dealer_hand = [];
-        }
+class BlackjackGame {
+    private $deck;
+    private $playerHand;
+    private $dealerHand;
 
-        public function generateDeck(){
-            $deck = [];
-            $suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
-            $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    public function __construct() {
+        $this->deck = [];
+        $this->playerHand = [];
+        $this->dealerHand = [];
+    }
 
-            foreach ($suits as $suit) {
-                foreach ($values as $value) {
-                    $deck[] = ['value' => $value, 'suit' => $suit];
-                }
-            }
+    public function startNewGame() {
+        $this->deck = $this->createDeck();
+        $this->shuffleDeck();
+        $this->dealInitialHands();
+    }
 
-            shuffle($deck);
-            return $deck;
-        }
+    private function createDeck() {
+        $suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+        $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        $deck = [];
 
-        public function startGame(){
-            if(!isset($_SESSION['player_hand']) || isset($_POST['new_game'])){
-                $_SESSION['player_hand'] = [];
-                $_SESSION['dealer_hand'] = [];
-
-                for ($i=0; $i < 2; $i++) { 
-                    $_SESSION['dealer_hand'][] = array_pop($this->deck);
-                    $_SESSION['player_hand'][] = array_pop($this->deck);
-                }
+        foreach ($suits as $suit) {
+            foreach ($values as $value) {
+                $deck[] = ['value' => $value, 'suit' => $suit];
             }
         }
 
-        public function play($action){
-            if($action === 'hit'){
-                $_SESSION['player_hand'][] = array_pop($this->deck);
-                if($this->calcHandValue($_SESSION['player_hand']) > 21){
-                    return "Você estourou! Crupiê Vence.";
-                }
-                elseif($action === 'stand'){
-                    while($this->calcHandValue($_SESSION['dealer_hand']) < 17){
-                        $_SESSION['dealer_hand'][] = array_pop($this->deck);
-                    }
+        return $deck;
+    }
 
-                    $player_hand_value = $this->calcHandValue($_SESSION['player_hand']);
-                    $dealer_hand_value = $this->calcHandValue($_SESSION['dealer_hand']);
+    private function shuffleDeck() {
+        shuffle($this->deck);
+    }
 
+    private function dealInitialHands() {
+        $this->playerHand = [];
+        $this->dealerHand = [];
 
-                    if($dealer_hand_value > 21 || $player_hand_value > $dealer_hand_value){
-                        return "Você venceu!!";
-                    }
-                    elseif ($player_hand_value < $dealer_hand_value) {
-                        return "Crupiê vence.";
-                    } 
-                    else {
-                        return "Empate.";
-                    }
-                }
-            }
+        for ($i = 0; $i < 2; $i++) {
+            $this->playerHand[] = array_pop($this->deck);
+            $this->dealerHand[] = array_pop($this->deck);
         }
     }
+
+    public function playerHit() {
+        $this->playerHand[] = array_pop($this->deck);
+
+        if ($this->calculateHandValue($this->playerHand) > 21) {
+            return "You busted! Dealer wins.";
+        }
+
+        return null;
+    }
+
+    public function playerStand() {
+        while ($this->calculateHandValue($this->dealerHand) < 17) {
+            $this->dealerHand[] = array_pop($this->deck);
+        }
+
+        $playerHandValue = $this->calculateHandValue($this->playerHand);
+        $dealerHandValue = $this->calculateHandValue($this->dealerHand);
+
+        if ($dealerHandValue > 21 || $playerHandValue > $dealerHandValue) {
+            return "You win!";
+        } elseif ($playerHandValue < $dealerHandValue) {
+            return "Dealer wins.";
+        } else {
+            return "Tie.";
+        }
+    }
+
+    private function calculateHandValue($hand) {
+        $value = 0;
+        $numAces = 0;
+
+        foreach ($hand as $card) {
+            if ($card['value'] === 'A') {
+                $numAces++;
+            } elseif (is_numeric($card['value'])) {
+                $value += $card['value'];
+            } else {
+                $value += 10;
+            }
+        }
+
+        for ($i = 0; $i < $numAces; $i++) {
+            if ($value + 11 <= 21) {
+                $value += 11;
+            } else {
+                $value += 1;
+            }
+        }
+
+        return $value;
+    }
+}
+
+$game = new BlackjackGame();
+
+if (isset($_POST['new_game'])) {
+    $game->startNewGame();
+}
+
+if (isset($_POST['action'])) {
+    if ($_POST['action'] === 'hit') {
+        $message = $game->playerHit();
+    } elseif ($_POST['action'] === 'stand') {
+        $message = $game->playerStand();
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>QUEBRANDO A BANCA</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Blackjack</title>
 </head>
 <body>
     <h1>Blackjack</h1>
 
-    <?php if (!isset($_SESSION['mao_jogador'])): ?>
+    <?php if (!isset($_SESSION['player_hand'])): ?>
         <form method="post">
-            <input type="submit" name="novo_jogo" value="Novo Jogo">
+            <input type="submit" name="new_game" value="New Game">
         </form>
     <?php else: ?>
-        <h2>Sua Mão:</h2>
-        <?php foreach ($_SESSION['mao_jogador'] as $carta): ?>
-            <p><?php echo $carta['valor'] . ' de ' . $carta['naipe']; ?></p>
+        <h2>Your Hand:</h2>
+        <?php foreach ($game->getPlayerHand() as $card): ?>
+            <p><?php echo $card['value'] . ' of ' . $card['suit']; ?></p>
         <?php endforeach; ?>
 
-        <p>Valor da sua mão: <?php echo calcularValorMao($_SESSION['mao_jogador']); ?></p>
+        <p>Your hand value: <?php echo $game->calculateHandValue($game->getPlayerHand()); ?></p>
 
         <form method="post">
-            <input type="submit" name="acao" value="hit">
-            <input type="submit" name="acao" value="stand">
+            <input type="submit" name="action" value="hit">
+            <input type="submit" name="action" value="stand">
         </form>
+
+        <?php if (isset($message)): ?>
+            <p><?php echo $message; ?></p>
+        <?php endif; ?>
     <?php endif; ?>
 </body>
 </html>
+
+
