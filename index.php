@@ -1,118 +1,91 @@
 <?php
 session_start();
 
-class BlackjackGame {
-    private $deck;
-    private $playerHand;
-    private $dealerHand;
+// Function to calculate the value of a blackjack hand
+function calculateHandValue($hand) {
+    $value = 0;
+    $numAces = 0;
 
-    public function __construct() {
-        $this->deck = [];
-        $this->playerHand = [];
-        $this->dealerHand = [];
-    }
-
-    public function startNewGame() {
-        $this->deck = $this->createDeck();
-        $this->shuffleDeck();
-        $this->dealInitialHands();
-    }
-
-    private function createDeck() {
-        $suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
-        $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-        $deck = [];
-
-        foreach ($suits as $suit) {
-            foreach ($values as $value) {
-                $deck[] = ['value' => $value, 'suit' => $suit];
-            }
-        }
-
-        return $deck;
-    }
-
-    private function shuffleDeck() {
-        shuffle($this->deck);
-    }
-
-    private function dealInitialHands() {
-        $this->playerHand = [];
-        $this->dealerHand = [];
-
-        for ($i = 0; $i < 2; $i++) {
-            $this->playerHand[] = array_pop($this->deck);
-            $this->dealerHand[] = array_pop($this->deck);
-        }
-    }
-
-    public function playerHit() {
-        $this->playerHand[] = array_pop($this->deck);
-
-        if ($this->calculateHandValue($this->playerHand) > 21) {
-            return "You busted! Dealer wins.";
-        }
-
-        return null;
-    }
-
-    public function playerStand() {
-        while ($this->calculateHandValue($this->dealerHand) < 17) {
-            $this->dealerHand[] = array_pop($this->deck);
-        }
-
-        $playerHandValue = $this->calculateHandValue($this->playerHand);
-        $dealerHandValue = $this->calculateHandValue($this->dealerHand);
-
-        if ($dealerHandValue > 21 || $playerHandValue > $dealerHandValue) {
-            return "You win!";
-        } elseif ($playerHandValue < $dealerHandValue) {
-            return "Dealer wins.";
+    foreach ($hand as $card) {
+        if ($card['value'] === 'A') {
+            $numAces++;
+        } elseif (is_numeric($card['value'])) {
+            $value += $card['value'];
         } else {
-            return "Tie.";
+            $value += 10; // Face cards are worth 10 points
         }
     }
 
-    private function calculateHandValue($hand) {
-        $value = 0;
-        $numAces = 0;
-
-        foreach ($hand as $card) {
-            if ($card['value'] === 'A') {
-                $numAces++;
-            } elseif (is_numeric($card['value'])) {
-                $value += $card['value'];
-            } else {
-                $value += 10;
-            }
+    // Handle Aces to get the best possible value
+    for ($i = 0; $i < $numAces; $i++) {
+        if ($value + 11 <= 21) {
+            $value += 11;
+        } else {
+            $value += 1;
         }
+    }
 
-        for ($i = 0; $i < $numAces; $i++) {
-            if ($value + 11 <= 21) {
-                $value += 11;
-            } else {
-                $value += 1;
-            }
-        }
+    return $value;
+}
 
-        return $value;
+// Create a deck of cards
+$deck = [];
+$suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+$values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+foreach ($suits as $suit) {
+    foreach ($values as $value) {
+        $deck[] = ['value' => $value, 'suit' => $suit];
     }
 }
 
-$game = new BlackjackGame();
+shuffle($deck);
 
-if (isset($_POST['new_game'])) {
-    $game->startNewGame();
+// Start a new hand
+if (!isset($_SESSION['player_hand']) || isset($_POST['new_game'])) {
+    $_SESSION['player_hand'] = [];
+    $_SESSION['dealer_hand'] = [];
+
+    // Deal two cards to the player and one to the dealer
+    for ($i = 0; $i < 2; $i++) {
+        $_SESSION['player_hand'][] = array_pop($deck);
+        $_SESSION['dealer_hand'][] = array_pop($deck);
+    }
 }
 
+// Game logic
 if (isset($_POST['action'])) {
     if ($_POST['action'] === 'hit') {
-        $message = $game->playerHit();
+        $_SESSION['player_hand'][] = array_pop($deck);
+
+        // Check if the player busted (went over 21)
+        if (calculateHandValue($_SESSION['player_hand']) > 21) {
+            echo "You busted! Dealer wins.";
+            unset($_SESSION['player_hand']);
+            unset($_SESSION['dealer_hand']);
+        }
     } elseif ($_POST['action'] === 'stand') {
-        $message = $game->playerStand();
+        // Dealer plays automatically until they have at least 17 points
+        while (calculateHandValue($_SESSION['dealer_hand']) < 17) {
+            $_SESSION['dealer_hand'][] = array_pop($deck);
+        }
+
+        $playerHandValue = calculateHandValue($_SESSION['player_hand']);
+        $dealerHandValue = calculateHandValue($_SESSION['dealer_hand']);
+
+        // Determine the winner
+        if ($dealerHandValue > 21 || $playerHandValue > $dealerHandValue) {
+            echo "You win!";
+        } elseif ($playerHandValue < $dealerHandValue) {
+            echo "Dealer wins.";
+        } else {
+            echo "Tie.";
+        }
+
+        unset($_SESSION['player_hand']);
+        unset($_SESSION['dealer_hand']);
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -129,22 +102,16 @@ if (isset($_POST['action'])) {
         </form>
     <?php else: ?>
         <h2>Your Hand:</h2>
-        <?php foreach ($game->getPlayerHand() as $card): ?>
+        <?php foreach ($_SESSION['player_hand'] as $card): ?>
             <p><?php echo $card['value'] . ' of ' . $card['suit']; ?></p>
         <?php endforeach; ?>
 
-        <p>Your hand value: <?php echo $game->calculateHandValue($game->getPlayerHand()); ?></p>
+        <p>Your hand value: <?php echo calculateHandValue($_SESSION['player_hand']); ?></p>
 
         <form method="post">
             <input type="submit" name="action" value="hit">
             <input type="submit" name="action" value="stand">
         </form>
-
-        <?php if (isset($message)): ?>
-            <p><?php echo $message; ?></p>
-        <?php endif; ?>
     <?php endif; ?>
 </body>
 </html>
-
-
