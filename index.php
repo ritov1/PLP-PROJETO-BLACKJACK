@@ -10,7 +10,7 @@ class Card {
     }
 
     public function __toString() {
-        return "{$this->rank} of {$this->suit}";
+        return "{$this->rank} {$this->suit}";
     }
 
     public function getRank() {
@@ -21,7 +21,7 @@ class Card {
         $valueMap = [
             '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6,
             '7' => 7, '8' => 8, '9' => 9, '10' => 10,
-            'Jack' => 10, 'Queen' => 10, 'King' => 10, 'Ace' => 11
+            'J' => 10, 'Q' => 10, 'K' => 10, 'A' => 11
         ];
 
         return $valueMap[$this->rank];
@@ -32,8 +32,8 @@ class Deck {
     private $cards = [];
 
     public function __construct() {
-        $suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
-        $ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+        $suits = ['&#9829', '&#9830', '&#9827', '&#9824'];
+        $ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
         foreach ($suits as $suit) {
             foreach ($ranks as $rank) {
@@ -58,8 +58,6 @@ class BlackjackGame {
         $this->deck = new Deck();
         $this->playerHand[] = $this->deck->drawCard();
         $this->dealerHand[] = $this->deck->drawCard();
-        $this->playerHand[] = $this->deck->drawCard();
-        $this->dealerHand[] = $this->deck->drawCard();
     }
 
     public function getPlayerHand() {
@@ -71,7 +69,7 @@ class BlackjackGame {
     }
 
     public function hit() {
-        $this->playerHand[] = $this->deck->drawCard();
+        array_push($this->playerHand, $this->deck->drawCard());
     }
 
     public function stand() {
@@ -126,20 +124,20 @@ class BlackjackGame {
     }
 }
 
-// Usage example
+
 $game = new BlackjackGame();
 $playerHand = $game->getPlayerHand();
 $dealerHand = $game->getDealerHand();
-
-// Perform game actions, such as hitting and standing, and calculate the result accordingly.
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blackjack Game</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
     <h1>Blackjack Game</h1>
@@ -161,8 +159,10 @@ $dealerHand = $game->getDealerHand();
             <h2>Dealer's Hand</h2>
             <ul id="dealer-cards">
                 <?php
+                $faceDownCard = '&#x1F0A0';
                 foreach ($dealerHand as $card) {
                     echo "<li>{$card}</li>";
+                    echo "<li>{$faceDownCard}</li>";
                 }
                 ?>
             </ul>
@@ -174,16 +174,16 @@ $dealerHand = $game->getDealerHand();
             <button type="submit" name="action" value="stand">Stand</button>
         </form>
         
+        
         <p id="game-result">
             <?php
-            if (isset($_POST['action'])) {
-                if ($_POST['action'] === 'hit') {
-                    $game->hit();
-                } elseif ($_POST['action'] === 'stand') {
-                    $game->stand();
+                if (isset($_POST['action'])) {
+                    if ($_POST['action'] === 'hit') {
+                        $game->hit();
+                    }   elseif ($_POST['action'] === 'stand') {
+                        $game->stand();
+                    }
                 }
-                echo $game->getResult();
-            }
             ?>
         </p>
     </div>
