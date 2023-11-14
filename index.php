@@ -27,6 +27,8 @@ function calculateHandValue($hand)
     return $value;
 }
 
+
+
 $deck = [];
 $suits = ['&#9824', '&#9829', '&#9830', '&#9827'];
 $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -89,21 +91,22 @@ if (isset($_POST['action'])) {
      <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
+            background-color: #004225;
             text-align: center;
+            margin-top: 8em;
         }
 
         h1 {
-            color: #333;
+            color: black;
         }
 
         h2 {
-            color: #555;
+            color: black;
         }
 
         p {
             margin: 0.5em 0;
-            color: #777;
+            color: black;
             font-size: 2em;
         }
 
@@ -120,13 +123,14 @@ if (isset($_POST['action'])) {
             padding: 0.5em 1em;
             font-size: 1em;
             cursor: pointer;
-            background-color: #5bc0de;
+            background-color: #618264;
             color: #fff;
             border: none;
+            border-radius: 4px;
         }
 
         input[type="submit"]:hover {
-            background-color: #31b0d5;
+            background-color: #B0D9B1;
         }
     </style>
 </head>
@@ -139,12 +143,12 @@ if (isset($_POST['action'])) {
             <input type="submit" name="new_game" value="New Game">
         </form>
     <?php else : ?>
-        <h2>Your Hand:</h2>
+        <h2>Sua Mão:</h2>
         <?php foreach ($_SESSION['player_hand'] as $card) : ?>
             <p><?php echo $card['value'] . ' ' . $card['suit']; ?></p>
         <?php endforeach; ?>
-        <p>Your hand value: <?php echo calculateHandValue($_SESSION['player_hand']); ?></p>
-        <h2>Dealer's Hand:</h2>
+        <p>Valor da sua mão: <?php echo calculateHandValue($_SESSION['player_hand']); ?></p>
+        <h2>Mão do Crupiê:</h2>
         <?php
         $dealerFirstCard = reset($_SESSION['dealer_hand']);
         ?>
