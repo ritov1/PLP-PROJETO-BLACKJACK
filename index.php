@@ -144,7 +144,7 @@ if (isset($_POST['action'])) {
         </form>
     <?php else : ?>
         <h2>Sua Mão:</h2>
-        <?php foreach ($_SESSION['player_hand'] as $card) : ?>
+        <?php foreach ($_SESSION['player_hand'] as $card) :?>
             <p><?php echo $card['value'] . ' ' . $card['suit']; ?></p>
         <?php endforeach; ?>
         <p>Valor da sua mão: <?php echo calculateHandValue($_SESSION['player_hand']); ?></p>
@@ -158,6 +158,9 @@ if (isset($_POST['action'])) {
             <input type="submit" name="action" value="hit">
             <input type="submit" name="action" value="stand">
         </form>
+                <p>
+                <a href = "co_op.php">multiplaier</a>
+                </p>
     <?php endif; ?>
 </body>
 
